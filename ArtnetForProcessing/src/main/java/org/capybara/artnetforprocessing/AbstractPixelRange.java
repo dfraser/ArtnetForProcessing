@@ -19,10 +19,6 @@ public abstract class AbstractPixelRange {
 			startDmxChannel = 1;
 		}
 		startDmxChannel--; // real-world channel numbers start at 1, we start at 0.
-		if (startDmxChannel+length > 170) {
-			length = 170 - startDmxChannel;
-			log.warn("length clamped to "+length);
-		}
 		this.length = length;
 		this.startChannel = startDmxChannel;
 	}

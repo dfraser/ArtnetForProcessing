@@ -1,6 +1,7 @@
 package org.capybara.artnetforprocessing;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -80,12 +81,30 @@ public class ArtnetForProcessing implements ArtNetDiscoveryListener, PConstants 
 			byte[] universeBuffer = new byte[512];
 			for (AbstractPixelRange pixelRange : u.getPixelRanges()) {
 				int startOffset = pixelRange.getStartChannel();
-				for (int i = 0; i < pixelRange.getLength(); i++) {
+				
+				int length = Math.abs(pixelRange.getLength());
+				
+				boolean invert = (pixelRange.getLength() < 0);
+				
+				for (int i = 0; i < length; i++) {
 					int rgbPixel = 0;
+					
 					if (pixelRange instanceof HorizPixelRange) {
-						rgbPixel = parent.get(pixelRange.getX()+i, pixelRange.getY());
+						if (!invert) {
+							rgbPixel = parent.get(pixelRange.getX()+i, pixelRange.getY());
+						} 
+						else {
+							rgbPixel = parent.get(pixelRange.getX()-i, pixelRange.getY());
+						}
+						
 					} else if (pixelRange instanceof VertPixelRange) {
-						rgbPixel = parent.get(pixelRange.getX(), pixelRange.getY()+i);
+						
+						if (!invert) {
+							rgbPixel = parent.get(pixelRange.getX(), pixelRange.getY()+i);
+						} else {
+							rgbPixel = parent.get(pixelRange.getX(), pixelRange.getY()-i);
+						}
+						
 					} else {
 						log.error("Unknown pixel range type, aborting frame: "+pixelRange.toString());
 						return;
@@ -95,11 +114,14 @@ public class ArtnetForProcessing implements ArtNetDiscoveryListener, PConstants 
 					int green = (rgbPixel >> 8) & 0xFF;
 					int blue = rgbPixel & 0xFF;
 					
-					universeBuffer[startOffset+(i*3)] = (byte) green;
-					universeBuffer[startOffset+(i*3)+1] = (byte) red;
-					universeBuffer[startOffset+(i*3)+2] = (byte) blue;					
+					int channelPos = (i*3) + startOffset;
+					
+					universeBuffer[channelPos] = (byte) green;
+					universeBuffer[channelPos+1] = (byte) red;
+					universeBuffer[channelPos+2] = (byte) blue;
 				}
 			}
+			
 			sendPacket(universeBuffer,u.getSubnet(), u.getUniverse());
 		}
 	}
